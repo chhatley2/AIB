@@ -5,7 +5,7 @@ $imageResourceGroup = 'DevOps-RG'
 $location = 'usgovvirginia'
 
 # Name of the image to be created
-$imageTemplateName = 'aibWin10GoldImage'
+$imageTemplateName = 'GAOWin10GoldImage'
 
 # Distribution properties of the managed image upon completion
 $runOutputName = 'myDistResults'
@@ -16,7 +16,7 @@ $subscriptionID = (Get-AzContext).Subscription.Id
 Write-Output $subscriptionID
 
 [int]$timeInt = $(Get-Date -UFormat '%s')
-$imageRoleDefName = "Azure Image Builder Image Def $timeInt"
+$imageRoleDefName = "Azure Image Builder"
 $identityName = "win10Gold$timeInt"
 
 New-AzUserAssignedIdentity -ResourceGroupName $imageResourceGroup -Name $identityName -Location $location
@@ -24,14 +24,23 @@ New-AzUserAssignedIdentity -ResourceGroupName $imageResourceGroup -Name $identit
 $identityNameResourceId = (Get-AzUserAssignedIdentity -ResourceGroupName $imageResourceGroup -Name $identityName).Id
 $identityNamePrincipalId = (Get-AzUserAssignedIdentity -ResourceGroupName $imageResourceGroup -Name $identityName).PrincipalId
 
-
-$myRoleImageCreationUrl = 'https://raw.githubusercontent.com/azure/azvmimagebuilder/master/solutions/12_Creating_AIB_Security_Roles/aibRoleImageCreation.json'
 $myRoleImageCreationPath = "myRoleImageCreation.json"
 
-Invoke-WebRequest -Uri $myRoleImageCreationUrl -OutFile $myRoleImageCreationPath -UseBasicParsing
 
 $Content = Get-Content -Path $myRoleImageCreationPath -Raw
 $Content = $Content -replace '<subscriptionID>', $subscriptionID
 $Content = $Content -replace '<rgName>', $imageResourceGroup
 $Content = $Content -replace 'Azure Image Builder Service Image Creation Role', $imageRoleDefName
 $Content | Out-File -FilePath $myRoleImageCreationPath -Force
+
+
+New-AzRoleDefinition -InputFile $myRoleImageCreationPath
+
+$RoleAssignParams = @{
+  ObjectId = $identityNamePrincipalId
+  RoleDefinitionName = $imageRoleDefName
+  Scope = "/subscriptions/$subscriptionID/resourceGroups/$imageResourceGroup"
+}
+New-AzRoleAssignment @RoleAssignParams
+
+
