@@ -16,7 +16,7 @@ $subscriptionID = (Get-AzContext).Subscription.Id
 Write-Output $subscriptionID
 
 [int]$timeInt = $(Get-Date -UFormat '%s')
-$imageRoleDefName = "Azure Image Builder"
+$imageRoleDefName = "Azure Image Builder Contributor"
 $identityName = "win10Gold$timeInt"
 
 New-AzUserAssignedIdentity -ResourceGroupName $imageResourceGroup -Name $identityName -Location $location
